@@ -1,0 +1,38 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: cloud-order-hystrix-service
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    service-url:
+      defaultZone: http://localhost:7001/eureka #单机版
+
+#feign调用服务的默认时长是1秒钟，Feign 的负载均衡底层用的就是 ribbon
+#ribbon超时设置
+ribbon:
+  ReadTimeout: 3000 #请求处理的超时时间
+  ConnectTimeout: 3000 #请求连接的超时时间, 默认一秒
+
+feign:
+  hystrix:
+    #feign开启支持hystrix
+    enabled: true
+
+# 重点注意： Ribbon超时与Hystrix超时问题，为了确保Ribbon重试的时候不被熔断，我们就需要让Hystrix的超时时间大于Ribbon的超时时间，
+#          否则Hystrix命令超时后，该命令直接熔断，重试机制就没有任何意义了。
+
+#在使用feign调用其它服务时，用@HystrixProperty配上服务调用超时降级，超时时间配置的3S，实际情况是调用1S就被降级。
+#超时时间配置，此处全局超时配置时间大于@HystrixProperty配置时间后，@HystrixProperty注解中的超时才生效
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            #这里设置理想的超时时间，如下5000ms
+            timeoutInMilliseconds: 5000
